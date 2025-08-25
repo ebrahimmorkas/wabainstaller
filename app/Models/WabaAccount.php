@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class WabaAccount extends Model
 {
-    protected $fillable = ['waba_id', 'access_token', 'name'];
+    protected $fillable = [
+    'waba_id', 'access_token', 'name',
+    'app_id', 'app_secret', // NEW
+];
+
 
     public function phoneNumbers() {
         return $this->hasMany(PhoneNumber::class, 'whatsapp_business_account_id', 'waba_id');

@@ -16,6 +16,13 @@ class OnboardingController extends Controller
     /**
      * Decide which stage to send the user to.
      */
+    // In OnboardingController
+    public function testWebhook()
+    {
+        \Illuminate\Support\Facades\Cache::put('waba_webhook_verified', true, now()->addDays(7));
+        return back()->with('success', 'Webhook marked verified (dev test).');
+    }
+
     public function index(Request $request)
     {
         $waba = WabaAccount::latest('id')->first();

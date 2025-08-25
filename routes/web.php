@@ -55,6 +55,10 @@ Route::post('/webhook/waba', [WabaWebhookController::class, 'receive']);
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
+    // routes/web.php inside auth group:
+Route::post('/onboarding/webhook/test', [OnboardingController::class, 'testWebhook'])
+    ->name('onboarding.webhook.test');
+
     // Dashboard is controller-driven so it can render the onboarding wizard inside
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -80,8 +84,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/create', [OnboardingController::class, 'storeCreate'])->name('create.store');
 
         // 2) Connect WABA (add waba_id + access_token)
-        Route::get('/connect/{waba}', [OnboardingController::class, 'showConnect'])->name('connect');
-        Route::post('/connect/{waba}', [OnboardingController::class, 'storeConnect'])->name('connect.store');
+        // routes/web.php (inside the onboarding group)
+Route::get('/connect/{waba}', [OnboardingController::class, 'showConnect'])->name('connect');
+
+// ✅ create/update without requiring an id
+Route::post('/connect', [OnboardingController::class, 'storeConnect'])->name('connect.store');
+
 
         // 3) Numbers: view/sync/toggle
         Route::get('/numbers/{waba}', [OnboardingController::class, 'showNumbers'])->name('numbers');

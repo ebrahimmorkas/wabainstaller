@@ -13,17 +13,23 @@ class WabaWebhookController extends Controller
      * GET /webhook/waba?hub.mode=subscribe&hub.challenge=xyz&hub.verify_token=YOUR_TOKEN
      */
     public function verify(Request $request)
-    {
-        $verifyToken = config('services.meta_webhook.verify_token', env('META_WEBHOOK_VERIFY_TOKEN'));
+{
+    $verifyToken = config('services.meta_webhook.verify_token', env('META_WEBHOOK_VERIFY_TOKEN'));
 
-        if ($request->get('hub_mode') === 'subscribe' || $request->get('hub.mode') === 'subscribe') {
-            if ($request->get('hub_verify_token') === $verifyToken || $request->get('hub.verify_token') === $verifyToken) {
-                return response($request->get('hub_challenge') ?? $request->get('hub.challenge'), 200);
-            }
-        }
+    $mode = $request->get('hub.mode') ?? $request->get('hub_mode');
+    $token = $request->get('hub.verify_token') ?? $request->get('hub_verify_token');
+    $challenge = $request->get('hub.challenge') ?? $request->get('hub_challenge');
 
-        return response('Invalid verify token', 403);
+    if ($mode === 'subscribe' && $token === $verifyToken) {
+        // Mark verified + store the last challenge seen (so UI can show it)
+        \Illuminate\Support\Facades\Cache::put('waba_webhook_verified', true, now()->addDays(30));
+        \Illuminate\Support\Facades\Cache::put('waba_webhook_challenge', (string) $challenge, now()->addDays(30));
+        return response($challenge, 200);
     }
+
+    return response('Invalid verify token', 403);
+}
+
 
     /**
      * Receive events from Meta.
