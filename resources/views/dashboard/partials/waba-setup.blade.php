@@ -5,11 +5,11 @@
     ['key'=>'numbers','label'=>'Numbers','sub'=>'Link numbers'],
     ['key'=>'finish','label'=>'Test & Finish','sub'=>'Send test'],
   ];
-  $idx = collect($steps)->search(fn($s) => $s['key'] === $stage);
-  $baseUrl = rtrim(config('app.url') ?? url('/'), '/');
-  $webhookUrl = $baseUrl . '/webhook/waba';
+
+  $idx        = collect($steps)->search(fn($s) => $s['key'] === $stage);
+  $webhookUrl = url('/webhook/waba');
   $verifyToken = config('services.meta_webhook.verify_token', env('META_WEBHOOK_VERIFY_TOKEN','verify_token'));
-  $challenge   = \Illuminate\Support\Facades\Cache::get('waba_webhook_challenge');
+  $challenge   = cache('waba_webhook_challenge');
 @endphp
 
 <div class="space-y-6">
@@ -22,10 +22,8 @@
     <div class="px-6 pb-5">
       <div class="grid md:grid-cols-4 gap-3">
         @foreach ($steps as $i => $s)
-          @php
-            $done = $i < $idx;
-            $active = $i === $idx;
-          @endphp
+          @php($active = $i === $idx)
+          @php($done   = $i <  $idx)
           <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-full flex items-center justify-center
                         {{ $done ? 'bg-emerald-600 text-white' : ($active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700') }}">
@@ -55,23 +53,31 @@
         </div>
       </div>
 
-      <form method="POST" action="{{ route('onboarding.connect.store') }}">
+      {{-- IMPORTANT: no extra param, no formaction --}}
+      <form method="POST" action="{{ route('onboarding.connect.store') }}" class="grid md:grid-cols-2 gap-4">
         @csrf
         <div class="md:col-span-2">
           <label class="text-sm font-medium text-gray-700">WABA ID</label>
-          <input name="waba_id" value="{{ old('waba_id', $waba->waba_id ?? '') }}" placeholder="123456789012345"
-                 class="w-full border rounded-lg px-3 py-2 mt-1" required>
+          <input name="waba_id"
+                 value="{{ old('waba_id', $waba->waba_id ?? '') }}"
+                 placeholder="123456789012345"
+                 class="w-full border rounded-lg px-3 py-2 mt-1"
+                 required>
         </div>
 
         <div class="md:col-span-2">
           <label class="text-sm font-medium text-gray-700">Access Token</label>
-          <input type="password" name="access_token" value="{{ old('access_token', $waba->access_token ?? '') }}" placeholder="EAAG..."
-                 class="w-full border rounded-lg px-3 py-2 mt-1" required>
+          <input type="password"
+                 name="access_token"
+                 value="{{ old('access_token', $waba->access_token ?? '') }}"
+                 placeholder="EAAG..."
+                 class="w-full border rounded-lg px-3 py-2 mt-1"
+                 required>
           <p class="text-xs text-gray-500 mt-1">Use a permanent token from Meta Developer Dashboard.</p>
         </div>
 
-        <div class="md:col-span-2 flex items-center gap-3">
-          <button formaction="{{ route('onboarding.connect.store') }}"
+        <div class="md:col-span-2">
+          <button type="submit"
                   class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg">
             Validate Connection
           </button>
@@ -108,7 +114,8 @@
           <input readonly class="w-full border rounded-lg px-3 py-2 mb-3" value="{{ $verifyToken }}">
 
           <label class="text-xs text-gray-600">Challenge Response</label>
-          <input readonly class="w-full border rounded-lg px-3 py-2 mb-3" value="{{ $challenge ? $challenge : 'Auto-populated once Meta calls webhook' }}">
+          <input readonly class="w-full border rounded-lg px-3 py-2 mb-3"
+                 value="{{ $challenge ? $challenge : 'Auto-populated once Meta calls webhook' }}">
 
           <div class="flex items-center justify-between">
             <div class="text-sm">
@@ -119,12 +126,16 @@
                 <span class="px-2 py-1 rounded bg-amber-100 text-amber-700 text-xs">Not Verified</span>
               @endif
             </div>
+
+            {{-- Dev convenience button only if the route exists --}}
+            @if (Route::has('onboarding.webhook.test'))
             <form method="POST" action="{{ route('onboarding.webhook.test') }}">
               @csrf
               <button class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg">
                 Trigger Challenge Test
               </button>
             </form>
+            @endif
           </div>
         </div>
       </div>
@@ -146,7 +157,9 @@
       </div>
 
       <div class="flex items-center justify-between mb-3">
-        <div class="text-sm text-gray-600">Account: <b>{{ $waba->name }}</b> · WABA ID: <span class="text-gray-500">{{ $waba->waba_id }}</span></div>
+        <div class="text-sm text-gray-600">
+          Account: <b>{{ $waba->name }}</b> · WABA ID: <span class="text-gray-500">{{ $waba->waba_id }}</span>
+        </div>
         <form method="POST" action="{{ route('onboarding.numbers.sync', $waba->id) }}">
           @csrf
           <button class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg">Sync Numbers</button>
@@ -208,7 +221,8 @@
     <div class="bg-white rounded-xl border shadow p-6">
       <div class="font-semibold text-lg mb-2">All Set!</div>
       <p class="text-sm text-gray-600 mb-4">Your connection, webhook, and numbers look good. You can start using the panel.</p>
-      <a href="{{ route('dashboard') }}" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg">Go to Dashboard</a>
+      <a href="{{ route('dashboard') }}"
+         class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg">Go to Dashboard</a>
     </div>
   @endif
 </div>

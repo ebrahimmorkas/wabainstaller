@@ -55,58 +55,31 @@ Route::post('/webhook/waba', [WabaWebhookController::class, 'receive']);
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
-    // routes/web.php inside auth group:
-Route::post('/onboarding/webhook/test', [OnboardingController::class, 'testWebhook'])
-    ->name('onboarding.webhook.test');
-
-    // Dashboard is controller-driven so it can render the onboarding wizard inside
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-    // Optional: quick entry to the wizard (redirects to the right stage)
     Route::get('/setup', [SetupWizardController::class, 'index'])->name('setup');
-
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Onboarding (semantic routes; no step-1/step-2)
-    |--------------------------------------------------------------------------
-    | Note: Even though the wizard UI is embedded in /dashboard, these routes
-    | handle the POST actions and (optionally) deep links.
-    */
-    Route::middleware('admin')->prefix('onboarding')->name('onboarding.')->group(function () {
+    // ⬇️ use class instead of 'admin'
+    Route::middleware(AdminMiddleware::class)->prefix('onboarding')->name('onboarding.')->group(function () {
 
-        // Auto-redirect to the appropriate stage based on current state
         Route::get('/', [OnboardingController::class, 'index'])->name('index');
 
-        // 1) Create WABA record (name-only)
-        Route::get('/create', [OnboardingController::class, 'showCreate'])->name('create');
+        Route::get('/create',  [OnboardingController::class, 'showCreate'])->name('create');
         Route::post('/create', [OnboardingController::class, 'storeCreate'])->name('create.store');
 
-        // 2) Connect WABA (add waba_id + access_token)
-        // routes/web.php (inside the onboarding group)
-Route::get('/connect/{waba}', [OnboardingController::class, 'showConnect'])->name('connect');
+        Route::get('/connect/{waba}', [OnboardingController::class, 'showConnect'])->name('connect');
+        Route::post('/connect',        [OnboardingController::class, 'storeConnect'])->name('connect.store'); // no {waba}
 
-// ✅ create/update without requiring an id
-Route::post('/connect', [OnboardingController::class, 'storeConnect'])->name('connect.store');
-
-
-        // 3) Numbers: view/sync/toggle
-        Route::get('/numbers/{waba}', [OnboardingController::class, 'showNumbers'])->name('numbers');
-        Route::post('/numbers/{waba}/sync', [OnboardingController::class, 'syncNumbers'])->name('numbers.sync');
+        Route::get('/numbers/{waba}',          [OnboardingController::class, 'showNumbers'])->name('numbers');
+        Route::post('/numbers/{waba}/sync',    [OnboardingController::class, 'syncNumbers'])->name('numbers.sync');
         Route::post('/numbers/{phoneNumberId}/toggle', [OnboardingController::class, 'toggleNumberStatus'])->name('numbers.toggle');
 
-        // 4) Business verification sync
         Route::post('/{waba}/verification/sync', [OnboardingController::class, 'syncVerification'])->name('verification.sync');
+        Route::post('/{waba}/profiles/sync',     [OnboardingController::class, 'syncProfiles'])->name('profiles.sync');
 
-        // 5) Phone number profiles sync
-        Route::post('/{waba}/profiles/sync', [OnboardingController::class, 'syncProfiles'])->name('profiles.sync');
-
-        // 6) Templates: list/sync
-        Route::get('/templates/{waba}', [OnboardingController::class, 'showTemplates'])->name('templates');
+        Route::get('/templates/{waba}',  [OnboardingController::class, 'showTemplates'])->name('templates');
         Route::post('/templates/{waba}/sync', [OnboardingController::class, 'syncTemplates'])->name('templates.sync');
 
-        // 7) Finish summary
         Route::get('/finish/{waba}', [OnboardingController::class, 'finish'])->name('finish');
     });
 });

@@ -44,6 +44,12 @@ class Kernel extends HttpKernel
      * Middleware aliases (use these names in routes).
      * Laravel 10+ uses $middlewareAliases instead of $routeMiddleware.
      */
+
+    protected $routeMiddleware = [
+    // ...
+    'admin' => \App\Http\Middleware\AdminMiddleware::class,
+];
+
     protected $middlewareAliases = [
         'auth' => \App\Http\Middleware\Authenticate::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
